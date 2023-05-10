@@ -1,90 +1,108 @@
-import { useEffect } from 'react';
-import Head from 'next/head';
-import { GetStaticProps, NextPage } from 'next';
-import axios from 'axios';
-import moment from 'moment';
+import { useEffect, useState } from "react";
+import Head from "next/head";
+import { GetStaticProps, NextPage } from "next";
+import axios from "axios";
 
-import Navbar from '../components/Navbar/Navbar';
-import Thumbnail from '../components/Thumbnail/Thumbnail';
-import { MovieData } from '../types';
-import styles from '../styles/Home.module.css';
-import { processMovieData } from '../utils/processMovieData';
-import { capitalize } from '../utils/capitalize';
+import Navbar from "../components/Navbar/Navbar";
+import Thumbnail from "../components/Thumbnail/Thumbnail";
+import { MovieData, Tab } from "../types";
+import styles from "../styles/Home.module.css";
+import Tabs from "../components/Tabs/Tabs";
+import MovieBoard from "../components/MovieBoard/MovieBoard";
+import Table from "../components/Table/Table";
 
 interface Props {
-	data: Array<MovieData>;
+  data: Array<MovieData>;
 }
 
 const Home: NextPage<Props> = ({ data }) => {
-	useEffect(() => {
-		console.log('data: ', data);
-	});
+  const collections: Tab[] = [
+    { key: "trending", displayText: "Trending Now" },
+    { key: "upcoming", displayText: "Coming Soon" },
+    { key: "", displayText: "Best of 2022" },
+  ];
 
-	return (
-		<div className={styles.container}>
-			<Head>
-				<title>FlixList</title>
-				<meta
-					name='description'
-					content='Movie reviews spoken from the heart'
-				/>
-				<link rel='icon' href='/favicon.ico' />
-			</Head>
+  const [selectedCollection, setSelectedCollection] = useState(collections[0]);
+  const [selectedMovie, setSelectedMovie] = useState(data[0]);
+  const [pageData, setPageData] = useState(data);
 
-			<Navbar />
-			<div className='trending-zone mx-20 my-10 px-16 py-8 w-fit'>
-				<h3 className='text-3xl mb-8'>Trending Now</h3>
-				{data.slice(0, 1).map((movie: MovieData) => (
-					<div className='movie-box rounded-xl flex px-12 py-8 gap-6 w-fit bg-beige'>
-						<Thumbnail
-							image={{ src: movie['poster_path'], alt: movie['title'] }}
-						/>
-						<section className='movie-info grid grid-flow-row grid-rows-3'>
-							<h1 className='max-w-md text-5xl font-cursive'>
-								{movie['title']}
-							</h1>
-							<p className='max-w-md'>{movie['overview']}</p>
-							<dl className='movie-rating flex gap-8 self-end'>
-								<div className='flex gap-2'>
-									<dt className='font-medium'>Language</dt>
-									<dl>{capitalize(`${movie['original_language']}`)}</dl>
-								</div>
-								<div className='flex gap-2'>
-									<dt className='font-medium'>Release Date</dt>
-									<dl>{moment(movie['release_date']).format('ll')}</dl>
-								</div>
-								<div className='flex gap-2'>
-									<dt className='font-medium'>Rating</dt>
-									<dl>{movie['vote_average']}</dl>
-								</div>
-							</dl>
-						</section>
-					</div>
-				))}
-			</div>
-		</div>
-	);
+  useEffect(() => {
+    console.log(data);
+  }, []);
+
+  const handleTabSelection = (tab: Tab) => {
+    setSelectedCollection(tab);
+    getCollectionData(tab.key);
+  };
+
+  const handleThumbnailClick = (movie: MovieData) => {
+    setSelectedMovie(movie);
+  };
+
+  const getCollectionData = async (collection: string) => {
+    console.log("we are here", collection);
+    const res = await axios.get(`/api/all/${collection}`);
+
+    setPageData(res.data);
+  };
+
+  return (
+    <div className={styles.container}>
+      <Head>
+        <title>FlixList</title>
+        <meta
+          name="description"
+          content="Movie reviews spoken from the heart"
+        />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+
+      <Navbar />
+      <div className="collection-zone my-10 mx-auto py-8 w-fit">
+        <Tabs
+          tabItems={collections}
+          activeTab={selectedCollection}
+          onTabChange={handleTabSelection}
+        />
+        <div className="flex gap-6">
+          <MovieBoard movie={selectedMovie} />
+          <div className="poster-grid grid grid-cols-2 grid-rows-2 items-center justify-center gap-6">
+            {pageData?.slice(0, 4).map((movie: MovieData) => (
+              <Thumbnail
+                movie={movie}
+                size="md"
+                className="cursor-pointer hover:opacity-90"
+                key={movie["title"]}
+                onClick={handleThumbnailClick}
+              />
+            ))}
+          </div>
+        </div>
+        <Table data={data} displayHeaders={["original_title", ""]} />
+      </div>
+    </div>
+  );
 };
 
 export const getStaticProps: GetStaticProps<{
-	data: MovieData[];
+  data: MovieData[];
 }> = async () => {
-	let data: MovieData[] = [];
+  let data: MovieData[] = [];
 
-	const res = await axios
-		.get(
-			'https://api.themoviedb.org/3/trending/all/week?api_key=14f42019af4f87a6c1044e9f7c093828'
-		)
-		.then((res) => {
-			data = res.data.results;
-		})
-		.catch((err) => console.log(err));
+  const res = await axios
+    .get(
+      "https://api.themoviedb.org/3/trending/all/week?api_key=14f42019af4f87a6c1044e9f7c093828"
+    )
+    .then((res) => {
+      data = res.data.results;
+    })
+    .catch((err) => console.log(err));
 
-	return {
-		props: {
-			data: data,
-		},
-	};
+  return {
+    props: {
+      data: data,
+    },
+  };
 };
 
 export default Home;

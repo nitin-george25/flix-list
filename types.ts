@@ -15,3 +15,8 @@ export type MovieData = {
 	release_date: string;
 	popularity: number;
 };
+
+export type Tab = {
+	key: string;
+	displayText: string;
+};
