@@ -78,7 +78,7 @@ const Home: NextPage<Props> = ({ data }) => {
             ))}
           </div>
         </div>
-        <Table data={data} displayHeaders={["original_title", ""]} />
+        {/* <Table data={data} displayHeaders={["original_title", ""]} /> */}
       </div>
     </div>
   );
